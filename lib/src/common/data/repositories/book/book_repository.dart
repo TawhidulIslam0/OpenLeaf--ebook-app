@@ -5,12 +5,55 @@ import 'package:flutter_ebook_app/src/common/common.dart';
 
 typedef BookRepositoryData = ({CategoryFeed? feed, HttpFailure? failure});
 
+class _CachedBookFeed {
+  final BookRepositoryData data;
+  final DateTime cachedAt;
+
+  const _CachedBookFeed(this.data, this.cachedAt);
+}
+
 abstract class BookRepository {
+  static const _cacheDuration = Duration(minutes: 5);
+  static const _maximumCachedFeeds = 50;
+  static final Map<String, _CachedBookFeed> _feedCache = {};
+  static final Map<String, Future<BookRepositoryData>> _pendingRequests = {};
+
   final Dio httpClient;
 
   const BookRepository(this.httpClient);
 
   Future<BookRepositoryData> getCategory(String url) async {
+    final cached = _feedCache.remove(url);
+    if (cached != null &&
+        DateTime.now().difference(cached.cachedAt) < _cacheDuration) {
+      _feedCache[url] = cached;
+      return cached.data;
+    }
+
+    final pendingRequest = _pendingRequests[url];
+    if (pendingRequest != null) {
+      return pendingRequest;
+    }
+
+    final request = _fetchCategory(url);
+    _pendingRequests[url] = request;
+    try {
+      final result = await request;
+      if (result.feed != null) {
+        _feedCache[url] = _CachedBookFeed(result, DateTime.now());
+        while (_feedCache.length > _maximumCachedFeeds) {
+          _feedCache.remove(_feedCache.keys.first);
+        }
+      }
+      return result;
+    } finally {
+      if (identical(_pendingRequests[url], request)) {
+        _pendingRequests.remove(url);
+      }
+    }
+  }
+
+  Future<BookRepositoryData> _fetchCategory(String url) async {
     try {
       final res = await httpClient.get(url);
       final Object? decoded =

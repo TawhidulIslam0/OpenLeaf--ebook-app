@@ -23,11 +23,13 @@ class GenreFeedNotifier extends _$GenreFeedNotifier {
   }
 
   Future<void> fetch() async {
-    state = AsyncValue.data((books: await _fetch(), loadingMore: false));
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () async => (books: await _fetch(), loadingMore: false),
+    );
   }
 
   Future<List<Entry>> _fetch() async {
-    state = const AsyncValue.loading();
     final successOrFailure = await _exploreRepository.getGenreFeed(_url);
     final success = successOrFailure.feed;
     final failure = successOrFailure.failure;

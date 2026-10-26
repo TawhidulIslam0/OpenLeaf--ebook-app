@@ -28,22 +28,7 @@ class _GenreScreenState extends ConsumerState<GenreScreen> {
   @override
   void initState() {
     super.initState();
-    _fetch();
     _scrollController.addListener(paginationListener);
-  }
-
-  void _fetch() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(genreFeedNotifierProvider(widget.url).notifier).fetch();
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant GenreScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      _fetch();
-    }
   }
 
   void paginationListener() {

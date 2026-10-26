@@ -1,7 +1,7 @@
 name: flutter_ebook_app
 description: A Flutter app for eBooks
 
-version: 1.0.7+11
+version: 1.0.9+18
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

@@ -1,4 +1,4 @@
-# 📖📖 OpenLeaf (Flutter eBook App) 
+# 📖 OpenLeaf (Flutter eBook App)
 
 A simple Flutter app to Read and Download books. The Books included in the app
 are from the [Public Domain](https://en.wikipedia.org/wiki/Public_domain)
@@ -7,6 +7,10 @@ are from the [Public Domain](https://en.wikipedia.org/wiki/Public_domain)
 Books are fetched from the [Gutendex API](https://gutendex.com/), which provides
 catalog data and EPUB downloads for public-domain books from Project Gutenberg.
 <br>
+
+On a book's detail page, **Read in app** opens the EPUB reader using a temporary
+app-cache copy; it does not add the book to Downloads. **Download** saves a
+persistent copy that can be reopened from the Downloads tab.
 
 ## 💻 Requirements
 
@@ -21,6 +25,7 @@ catalog data and EPUB downloads for public-domain books from Project Gutenberg.
 - [x] Favorites.
 - [x] Dark Mode
 - [x] Swipe to delete downloads.
+- [x] Recently opened genres and author feeds are cached briefly for faster repeat visits.
 
 
 ## 🔌 Plugins

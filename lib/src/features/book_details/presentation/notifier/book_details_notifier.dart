@@ -21,11 +21,10 @@ class BookDetailsNotifier extends _$BookDetailsNotifier {
 
   Future<void> fetch() async {
     state = const AsyncValue.loading();
-    state = AsyncValue.data(await _fetch());
+    state = await AsyncValue.guard(_fetch);
   }
 
   Future<CategoryFeed> _fetch() async {
-    state = const AsyncValue.loading();
     final successOrFailure = await _bookDetailsRepository.getRelatedFeed(_url);
 
     final success = successOrFailure.feed;

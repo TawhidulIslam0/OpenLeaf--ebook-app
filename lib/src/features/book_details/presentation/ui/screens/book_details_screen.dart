@@ -255,63 +255,61 @@ class _DownloadButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final id = entry.id!.t.toString();
-    return ref.watch(downloadsNotifierProvider).maybeWhen(
-      orElse: () {
-        return _downloadButton(context, ref);
-      },
+    final downloads = ref.watch(downloadsNotifierProvider);
+    final downloadedBook = downloads.maybeWhen(
       data: (books) {
-        final bookIsDownloaded =
-            books.indexWhere((element) => element['id'] == id) != -1;
-        if (!bookIsDownloaded) {
-          return _downloadButton(context, ref);
+        for (final book in books) {
+          if (book['id'] == id) return book;
         }
-        final book = books.firstWhere((element) => element['id'] == id);
-        return TextButton(
-          onPressed: () => openBook(book['path'] as String, context, ref),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-          ),
-          child: Text(
-            'Read Book'.toUpperCase(),
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: context.theme.textTheme.titleLarge?.color ?? Colors.black,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        );
+        return null;
       },
+      orElse: () => null,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextButton.icon(
+          onPressed: () {
+            final path = downloadedBook?['path'];
+            if (path is String) {
+              openBook(path, context, ref);
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => ReadBookScreen(
+                    id: id,
+                    title: entry.title!.t ?? 'Book',
+                    url: entry.link![3].href!,
+                  ),
+                ),
+              );
+            }
+          },
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          icon: const Icon(Icons.menu_book_outlined),
+          label: const Text('Read in app'),
+        ),
+        TextButton.icon(
+          onPressed: () => _downloadBook(context),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          icon: const Icon(Icons.download_outlined),
+          label: const Text('Download'),
+        ),
+      ],
     );
   }
 
-  Widget _downloadButton(BuildContext context, WidgetRef ref) => TextButton(
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-        ),
-        onPressed: () async {
-          final downloadedPath = await DownloadAlert.show(
-            context: context,
-            url: entry.link![3].href!,
-            name: entry.title!.t ?? '',
-            image: '${entry.link![1].href}',
-            id: entry.id!.t.toString(),
-          );
-          if (downloadedPath is String && context.mounted) {
-            await openBook(downloadedPath, context, ref);
-          }
-        },
-        child: Text(
-          'Download'.toUpperCase(),
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: context.theme.textTheme.titleLarge?.color ?? Colors.black,
-            decoration: TextDecoration.underline,
-          ),
-        ),
-      );
+  Future<void> _downloadBook(BuildContext context) async {
+    await DownloadAlert.show(
+      context: context,
+      url: entry.link![3].href!,
+      name: entry.title!.t ?? '',
+      image: '${entry.link![1].href}',
+      id: id,
+    );
+  }
 
   Future<void> openBook(
     String path,
@@ -371,26 +369,6 @@ class _MoreBooksFromAuthor extends ConsumerStatefulWidget {
 
 class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
   @override
-  void initState() {
-    super.initState();
-    _fetch();
-  }
-
-  void _fetch() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(bookDetailsNotifierProvider(widget.authorUrl).notifier).fetch();
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _MoreBooksFromAuthor oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.authorUrl != widget.authorUrl) {
-      _fetch();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ref.watch(bookDetailsNotifierProvider(widget.authorUrl)).maybeWhen(
           orElse: () => const SizedBox.shrink(),
@@ -424,7 +402,9 @@ class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
           },
           error: (_, __) {
             return MyErrorWidget(
-              refreshCallBack: () => _fetch(),
+              refreshCallBack: () => ref
+                  .read(bookDetailsNotifierProvider(widget.authorUrl).notifier)
+                  .fetch(),
             );
           },
         );
