@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ebook_app/src/common/common.dart';
+import 'package:flutter_ebook_app/src/features/library/data/reading_shelf.dart';
+import 'package:flutter_ebook_app/src/features/library/presentation/ui/screens/epub_reader_screen.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iridium_reader_widget/views/viewers/epub_screen.dart';
 
 @RoutePage()
 class DownloadsScreen extends ConsumerWidget {
@@ -43,12 +44,22 @@ class DownloadsScreen extends ConsumerWidget {
                         final path = book['path'] as String;
                         final bookFile = File(path);
                         if (bookFile.existsSync()) {
-                          Navigator.push(
+                          await ReadingShelf.record(
+                            id: book['id'] as String,
+                            title: book['name'] as String,
+                            author: 'Unknown author',
+                            cover: book['image'] as String,
+                            url: '',
+                            path: path,
+                          );
+                          if (!context.mounted) return;
+                          await Navigator.push<void>(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) {
-                                return EpubScreen.fromPath(filePath: path);
-                              },
+                            MaterialPageRoute<void>(
+                              builder: (_) => EpubReaderScreen(
+                                bookId: book['id'] as String,
+                                filePath: path,
+                              ),
                             ),
                           );
                         } else {

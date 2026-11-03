@@ -8,8 +8,11 @@ OpenLeaf is a Flutter ebook library for discovering public-domain books, reading
 - Search by book title, author, and subject, with popularity/title/newest sorting.
 - Browse featured books, categories, and recently added titles.
 - Read EPUB books using the integrated Iridium reader.
-- Save favorites and download books for offline reading.
-- Keep a local reading history with one-tap reopen and removal controls.
+- Search the catalog as you type, with debounced requests and stale-request cancellation.
+- Save favorites and cache downloaded EPUBs locally for faster offline reopening.
+- Import EPUB and PDF files into a persistent local library.
+- Use reader bookmarks, highlights, saved reading position, and persisted font/theme settings.
+- Continue reading from the last saved EPUB location and view books, sessions, and reading-day statistics.
 - Light and dark themes with an editorial forest-green visual identity.
 
 ## Run in VS Code
@@ -20,4 +23,4 @@ OpenLeaf is a Flutter ebook library for discovering public-domain books, reading
 4. Connect an Android device or start an emulator.
 5. Run `flutter run`.
 
-The app uses Project Gutenberg's public-domain catalog via Gutendex. Catalog availability and EPUB formats vary by title. Reading history is stored locally on the device. The history tracks books opened; exact in-book page position restoration is not yet exposed by the integrated EPUB reader.
+The app uses Project Gutenberg's public-domain catalog via Gutendex. Catalog availability and EPUB formats vary by title. Reading history, imported books, cached EPUBs, reader preferences, and annotations are stored locally on the device. Imported files are copied into app-managed storage; removing an imported book from the library deletes that copy.

@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:dartx/dartx.dart';
-import 'package:dfunc/dfunc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +20,7 @@ class EpubScreen extends BookScreen {
   final String? location;
   final int? settings;
   final Map<String, dynamic>? theme;
+  final ValueChanged<Map<String, dynamic>>? onSettingsChanged;
 
   const EpubScreen(
       {super.key,
@@ -28,7 +29,8 @@ class EpubScreen extends BookScreen {
       super.paginationCallback,
       this.location,
       this.settings,
-      this.theme});
+      this.theme,
+      this.onSettingsChanged});
 
   factory EpubScreen.fromPath(
       {Key? key,
@@ -37,7 +39,8 @@ class EpubScreen extends BookScreen {
       PaginationCallback? paginationCallback,
       String? location,
       String? settings,
-      String? theme}) {
+      String? theme,
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -52,6 +55,7 @@ class EpubScreen extends BookScreen {
       location: location,
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
+      onSettingsChanged: onSettingsChanged,
     );
   }
 
@@ -62,7 +66,8 @@ class EpubScreen extends BookScreen {
       PaginationCallback? paginationCallback,
       String? location,
       String? settings,
-      String? theme}) {
+      String? theme,
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -77,6 +82,7 @@ class EpubScreen extends BookScreen {
       location: location,
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
+      onSettingsChanged: onSettingsChanged,
     );
   }
 
@@ -88,7 +94,8 @@ class EpubScreen extends BookScreen {
       MediaType? mimeType,
       String? location,
       String? settings,
-      String? theme}) {
+      String? theme,
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -103,6 +110,7 @@ class EpubScreen extends BookScreen {
       location: location,
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
+      onSettingsChanged: onSettingsChanged,
     );
   }
 
@@ -113,6 +121,8 @@ class EpubScreen extends BookScreen {
 class EpubScreenState extends BookScreenState<EpubScreen, EpubController> {
   late ViewerSettingsBloc _viewerSettingsBloc;
   late ReaderThemeBloc _readerThemeBloc;
+  StreamSubscription<ViewerSettingsState>? _settingsSubscription;
+  StreamSubscription<ReaderThemeState>? _themeSubscription;
 
   @override
   void initState() {
@@ -123,13 +133,35 @@ class EpubScreenState extends BookScreenState<EpubScreen, EpubController> {
     _readerThemeBloc = ReaderThemeBloc(widget.theme != null
         ? ReaderThemeConfig.fromJson(widget.theme!)
         : ReaderThemeConfig.defaultTheme);
+    _settingsSubscription = _viewerSettingsBloc.stream.listen((_) {
+      _notifySettingsChanged();
+    });
+    _themeSubscription = _readerThemeBloc.stream.listen((_) {
+      _notifySettingsChanged();
+    });
+  }
+
+  void _notifySettingsChanged() {
+    widget.onSettingsChanged?.call({
+      'fontSize': _viewerSettingsBloc.state.viewerSettings.fontSize,
+      'theme': _readerThemeBloc.currentTheme.toJson(),
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_settingsSubscription?.cancel());
+    unawaited(_themeSubscription?.cancel());
+    super.dispose();
   }
 
   @override
   Future<bool> onWillPop() async {
     try {
-      readerContext.paginationInfo?.let((paginationInfo) =>
-          readerAnnotationRepository.savePosition(paginationInfo));
+      final paginationInfo = readerContext.paginationInfo;
+      if (paginationInfo != null) {
+        await readerAnnotationRepository.savePosition(paginationInfo);
+      }
     } catch (error, stackTrace) {
       debugPrint('Failed to save reader position: $error\n$stackTrace');
     }

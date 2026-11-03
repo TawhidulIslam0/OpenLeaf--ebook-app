@@ -34,6 +34,7 @@ abstract class BookScreenState<T extends BookScreen,
     PubController extends PublicationController> extends State<T> {
   late PubController publicationController;
   late ReaderContext readerContext;
+  StreamSubscription<PaginationInfo>? _paginationSubscription;
 
   ReaderAnnotationRepository get readerAnnotationRepository =>
       widget.readerAnnotationRepository ?? InMemoryReaderAnnotationRepository();
@@ -49,6 +50,12 @@ abstract class BookScreenState<T extends BookScreen,
         createStreamer(),
         readerAnnotationRepository,
         handlersProvider);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_paginationSubscription?.cancel());
+    super.dispose();
   }
 
   Future<bool> loadWebViewConfig() async {
@@ -148,7 +155,8 @@ abstract class BookScreenState<T extends BookScreen,
   void onReaderContextCreated(ReaderContext readerContext) {
     this.readerContext = readerContext;
     if (widget.paginationCallback != null) {
-      readerContext.currentLocationStream.listen(widget.paginationCallback);
+      _paginationSubscription =
+          readerContext.currentLocationStream.listen(widget.paginationCallback);
     }
   }
 
