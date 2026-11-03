@@ -23,7 +23,7 @@ class GenreScreen extends ConsumerStatefulWidget {
 
 class _GenreScreenState extends ConsumerState<GenreScreen> {
   final _scrollController = ScrollController();
-  int page = 1;
+  int _nextPage = 2;
 
   @override
   void initState() {
@@ -32,30 +32,18 @@ class _GenreScreenState extends ConsumerState<GenreScreen> {
   }
 
   void paginationListener() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      ref.watch(genreFeedNotifierProvider(widget.url)).maybeWhen(
-        data: (data) {
-          final loadingMore = data.loadingMore;
-          if (!loadingMore) {
-            page += 1;
-            ref
-                .read(genreFeedNotifierProvider(widget.url).notifier)
-                .paginate(page);
-            // Animate to bottom of list
-            Timer(const Duration(milliseconds: 100), () {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 100),
-                curve: Curves.easeIn,
-              );
-            });
-          }
-        },
-        orElse: () {
-          return;
-        },
-      );
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.extentAfter < 300) _loadNextPage();
+  }
+
+  Future<void> _loadNextPage() async {
+    final notifier = ref.read(genreFeedNotifierProvider(widget.url).notifier);
+    final page = _nextPage;
+    await notifier.paginate(page);
+    final result =
+        ref.read(genreFeedNotifierProvider(widget.url)).asData?.value;
+    if (result != null && result.paginationError == null) {
+      _nextPage = page + 1;
     }
   }
 
@@ -90,27 +78,55 @@ class _GenreScreenState extends ConsumerState<GenreScreen> {
               loading: () => const LoadingWidget(),
               data: (data) {
                 final books = data.books;
-                final loadingMore = data.loadingMore;
-                return ListView(
-                  controller: _scrollController,
-                  children: <Widget>[
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      shrinkWrap: true,
-                      itemCount: books.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        final Entry entry = books[index];
-                        return Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: BookListItem(entry: entry),
-                        );
-                      },
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    _nextPage = 2;
+                    await ref
+                        .read(genreFeedNotifierProvider(widget.url).notifier)
+                        .fetch();
+                  },
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
                     ),
-                    const SizedBox(height: 10.0),
-                    if (loadingMore)
-                      const SizedBox(height: 80.0, child: LoadingWidget()),
-                  ],
+                    itemCount: books.length +
+                        (data.loadingMore || data.paginationError != null
+                            ? 1
+                            : 0),
+                    itemBuilder: (context, index) {
+                      if (index < books.length) {
+                        return Padding(
+                          padding: const EdgeInsets.all(5),
+                          child: BookListItem(entry: books[index]),
+                        );
+                      }
+                      if (data.loadingMore) {
+                        return const SizedBox(
+                          height: 80,
+                          child: LoadingWidget(),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Could not load more books: '
+                              '${data.paginationError}',
+                              textAlign: TextAlign.center,
+                            ),
+                            TextButton(
+                              onPressed: _loadNextPage,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),

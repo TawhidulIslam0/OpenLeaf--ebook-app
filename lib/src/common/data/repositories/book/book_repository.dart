@@ -22,6 +22,10 @@ abstract class BookRepository {
 
   const BookRepository(this.httpClient);
 
+  static void invalidateCache({required String url}) {
+    _feedCache.remove(url.replaceAll(baseURL, ''));
+  }
+
   Future<BookRepositoryData> getCategory(String url) async {
     final cached = _feedCache.remove(url);
     if (cached != null &&

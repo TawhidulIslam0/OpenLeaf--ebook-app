@@ -9,15 +9,21 @@ const Color darkBG = Color(0xff121212);
 const Color smokeWhite = Color(0xffF5F5F5);
 
 final ThemeData lightTheme = ThemeData(
-  colorScheme: ColorScheme.fromSwatch().copyWith(
-    secondary: lightBG,
-    brightness: Brightness.light,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: lightAccent,
+  ).copyWith(
+    secondary: lightAccent,
   ),
   useMaterial3: true,
   primaryColor: lightPrimary,
   visualDensity: VisualDensity.adaptivePlatformDensity,
   scaffoldBackgroundColor: const Color(0xffFAF9F5),
-  filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: lightAccent, foregroundColor: Colors.white)),
+  filledButtonTheme: FilledButtonThemeData(
+    style: FilledButton.styleFrom(
+      backgroundColor: lightAccent,
+      foregroundColor: Colors.white,
+    ),
+  ),
   navigationRailTheme: const NavigationRailThemeData(
     backgroundColor: smokeWhite,
   ),
@@ -32,7 +38,7 @@ final ThemeData lightTheme = ThemeData(
     ),
   ),
   appBarTheme: const AppBarTheme(
-    color: lightPrimary,
+    backgroundColor: lightPrimary,
     elevation: 0.0,
     titleTextStyle: TextStyle(
       color: Colors.black,
@@ -45,15 +51,22 @@ final ThemeData lightTheme = ThemeData(
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
-  colorScheme: ColorScheme.fromSwatch().copyWith(
-    secondary: darkBG,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: darkAccent,
     brightness: Brightness.dark,
+  ).copyWith(
+    secondary: darkAccent,
   ),
   useMaterial3: true,
   primaryColor: darkPrimary,
   visualDensity: VisualDensity.adaptivePlatformDensity,
   scaffoldBackgroundColor: const Color(0xff151A17),
-  filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: darkAccent, foregroundColor: const Color(0xff142018))),
+  filledButtonTheme: FilledButtonThemeData(
+    style: FilledButton.styleFrom(
+      backgroundColor: darkAccent,
+      foregroundColor: const Color(0xff142018),
+    ),
+  ),
   navigationRailTheme: const NavigationRailThemeData(
     backgroundColor: darkPrimary,
   ),
@@ -66,7 +79,7 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
   appBarTheme: const AppBarTheme(
-    color: darkPrimary,
+    backgroundColor: darkPrimary,
     elevation: 0.0,
     titleTextStyle: TextStyle(
       color: Colors.white,

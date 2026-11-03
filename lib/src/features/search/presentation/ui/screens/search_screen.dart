@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ebook_app/src/common/domain/models/category_feed.dart';
 import 'package:flutter_ebook_app/src/features/book_details/presentation/ui/screens/book_details_screen.dart';
+import 'package:flutter_ebook_app/src/features/search/data/gutendex_search_query.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -13,11 +14,13 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  static const _maximumSearchResults = 500;
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final Dio _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
     ),
   );
   final Duration _debounceDuration = const Duration(milliseconds: 300);
@@ -25,15 +28,40 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _debounce;
   CancelToken? _activeRequest;
   bool _loading = false;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+  bool _searchCompleted = false;
   String? _error;
   String _sort = 'popular';
+  String _language = 'en';
   int _requestId = 0;
+  int _nextPage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadMoreWhenNearEnd);
+  }
+
+  void _loadMoreWhenNearEnd() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.extentAfter < 500) {
+      _loadNextPage();
+    }
+  }
+
+  void _loadNextPage() {
+    if (!_hasMore || _loading || _loadingMore) return;
+    unawaited(_search(_controller.text, _nextPage));
+  }
 
   void _scheduleSearch(String value) {
     _debounce?.cancel();
     _activeRequest?.cancel('Search query changed.');
     _activeRequest = null;
     _requestId++;
+    _nextPage = 1;
+    _hasMore = false;
     final query = value.trim();
     if (query.isEmpty) {
       setState(() {
@@ -47,21 +75,29 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _error = null;
       _loading = false;
+      _results = [];
+      _searchCompleted = false;
     });
     _debounce = Timer(_debounceDuration, () => _search(query));
   }
 
-  Future<void> _search([String? value]) async {
+  Future<void> _search([String? value, int page = 1]) async {
     _debounce?.cancel();
     final query = (value ?? _controller.text).trim();
     if (query.isEmpty) return;
+    final searchQuery = normalizeGutendexSearchQuery(query);
+    if (page == 1) {
+      _nextPage = 1;
+      _hasMore = false;
+    }
 
     _activeRequest?.cancel('Search query changed.');
     final cancelToken = CancelToken();
     _activeRequest = cancelToken;
     final requestId = ++_requestId;
     setState(() {
-      _loading = true;
+      _loading = page == 1;
+      _loadingMore = page > 1;
       _error = null;
     });
 
@@ -70,74 +106,87 @@ class _SearchScreenState extends State<SearchScreen> {
         'https://gutendex.com/books/',
         cancelToken: cancelToken,
         queryParameters: {
-          'search': query,
-          'languages': 'en',
+          'search': searchQuery,
+          'mime_type': 'application/epub+zip',
+          if (_language.isNotEmpty) 'languages': _language,
           'copyright': 'false',
           'sort': _sort == 'newest' ? 'descending' : 'popular',
+          'page': page,
         },
       );
       final data = response.data;
-      final raw = data is Map ? data['results'] : null;
-      final results = <Entry>[];
-      if (raw is List) {
-        for (final item in raw.whereType<Map>()) {
-          final book = Map<String, dynamic>.from(item);
-          final formats = book['formats'];
-          if (formats is! Map) continue;
-          final epub = formats['application/epub+zip'];
-          if (epub is! String) continue;
+      if (data is! Map || data['results'] is! List) {
+        throw const FormatException(
+          'The catalog returned invalid search data.',
+        );
+      }
+      final raw = data['results'] as List;
+      final results = page == 1 ? <Entry>[] : List<Entry>.from(_results);
+      for (final item in raw.whereType<Map>()) {
+        final book = Map<String, dynamic>.from(item);
+        final formats = book['formats'];
+        if (formats is! Map) continue;
+        final epub = formats['application/epub+zip'];
+        if (epub is! String) continue;
 
-          final id = '${book['id']}';
-          final authors = book['authors'];
-          final author =
-              authors is List && authors.isNotEmpty && authors.first is Map
-                  ? authors.first as Map
-                  : <String, dynamic>{};
-          final authorName = '${author['name'] ?? 'Unknown author'}';
-          final subjects = book['subjects'];
-          final cover = formats['image/jpeg'] ??
-              'https://www.gutenberg.org/cache/epub/$id/pg$id.cover.medium.jpg';
-          final summaries = book['summaries'];
-          results.add(
-            Entry(
-              id: Id(t: id),
-              title: Id(t: '${book['title'] ?? 'Untitled'}'),
-              author: Author1(
-                name: Id(t: authorName),
-                uri: Id(
-                  t: 'https://gutendex.com/books/?search=${Uri.encodeQueryComponent(authorName)}',
-                ),
-              ),
-              summary: Id(
-                t: summaries is List && summaries.isNotEmpty
-                    ? '${summaries.first}'
-                    : 'A public-domain ebook available from Project Gutenberg.',
-              ),
-              category: subjects is List
-                  ? subjects
-                      .whereType<String>()
-                      .take(5)
-                      .map((subject) => Category(label: subject))
-                      .toList()
-                  : [],
-              link: [
-                Link1(rel: 'self', href: 'https://gutendex.com/books/$id/'),
-                Link1(rel: 'cover', href: '$cover'),
-                Link1(
-                  rel: 'alternate',
-                  href: 'https://www.gutenberg.org/ebooks/$id',
-                ),
-                Link1(
-                  rel: 'download',
-                  type: 'application/epub+zip',
-                  href: epub,
-                ),
-              ],
+        final id = '${book['id']}';
+        final authors = book['authors'];
+        final author =
+            authors is List && authors.isNotEmpty && authors.first is Map
+                ? authors.first as Map
+                : <String, dynamic>{};
+        final authorName = '${author['name'] ?? 'Unknown author'}';
+        final subjects = book['subjects'];
+        final cover = formats['image/jpeg'] ??
+            'https://www.gutenberg.org/cache/epub/$id/pg$id.cover.medium.jpg';
+        final summaries = book['summaries'];
+        final entry = Entry(
+          id: Id(t: id),
+          title: Id(t: '${book['title'] ?? 'Untitled'}'),
+          author: Author1(
+            name: Id(t: authorName),
+            uri: Id(
+              t: 'https://gutendex.com/books/?search=${Uri.encodeQueryComponent(authorName)}',
             ),
-          );
+          ),
+          summary: Id(
+            t: summaries is List && summaries.isNotEmpty
+                ? '${summaries.first}'
+                : 'A public-domain ebook available from Project Gutenberg.',
+          ),
+          category: subjects is List
+              ? subjects
+                  .whereType<String>()
+                  .take(5)
+                  .map((subject) => Category(label: subject))
+                  .toList()
+              : [],
+          link: [
+            Link1(rel: 'self', href: 'https://gutendex.com/books/$id/'),
+            Link1(rel: 'cover', href: '$cover'),
+            Link1(
+              rel: 'alternate',
+              href: 'https://www.gutenberg.org/ebooks/$id',
+            ),
+            Link1(
+              rel: 'download',
+              type: 'application/epub+zip',
+              href: epub,
+            ),
+          ],
+        );
+        if (!results.any((existing) => existing.id?.t == id)) {
+          results.add(entry);
         }
       }
 
+      final hasNextPage = data['next'] is String;
+      if (!mounted || requestId != _requestId) return;
+      if (results.length > _maximumSearchResults) {
+        results.removeRange(_maximumSearchResults, results.length);
+      }
+      _hasMore = hasNextPage && results.length < _maximumSearchResults;
+      _nextPage = hasNextPage ? page + 1 : page;
       if (_sort == 'title') {
         results.sort(
           (a, b) => (a.title?.t ?? '')
@@ -146,16 +195,16 @@ class _SearchScreenState extends State<SearchScreen> {
         );
       }
       if (mounted && requestId == _requestId) {
-        setState(() => _results = results);
+        setState(() {
+          _results = results;
+          _searchCompleted = true;
+        });
       }
     } on DioException catch (error) {
       if (error.type != DioExceptionType.cancel &&
           mounted &&
           requestId == _requestId) {
-        setState(
-          () => _error =
-              'Could not search the catalog. Check your connection and try again.',
-        );
+        setState(() => _error = _errorMessage(error));
       }
     } catch (error, stackTrace) {
       debugPrint('Catalog search failed: $error');
@@ -168,13 +217,31 @@ class _SearchScreenState extends State<SearchScreen> {
       }
     } finally {
       if (mounted && requestId == _requestId) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _loadingMore = false;
+        });
       }
     }
   }
 
+  String _errorMessage(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'The catalog request timed out. Check your connection and retry.';
+    }
+    final statusCode = error.response?.statusCode;
+    if (statusCode != null) {
+      return 'The catalog returned HTTP $statusCode. Retry in a moment.';
+    }
+    return 'Could not search the catalog. Check your connection and try again.';
+  }
+
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreWhenNearEnd)
+      ..dispose();
     _debounce?.cancel();
     _activeRequest?.cancel('Search screen closed.');
     _controller.dispose();
@@ -193,7 +260,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 controller: _controller,
                 textInputAction: TextInputAction.search,
                 onChanged: _scheduleSearch,
-                onSubmitted: _search,
+                onSubmitted: (value) => _search(value),
                 decoration: InputDecoration(
                   hintText: 'Search titles, authors, subjects…',
                   prefixIcon: const Icon(Icons.search),
@@ -215,26 +282,21 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text('Sort by'),
-                  const SizedBox(width: 10),
+                  const Text('Sort'),
                   DropdownButton<String>(
                     value: _sort,
                     underline: const SizedBox.shrink(),
                     items: const [
                       DropdownMenuItem(
                         value: 'popular',
-                        child: Text('Popularity'),
+                        child: Text('Popular'),
                       ),
-                      DropdownMenuItem(
-                        value: 'title',
-                        child: Text('Title A–Z'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'newest',
-                        child: Text('Newest'),
-                      ),
+                      DropdownMenuItem(value: 'title', child: Text('Title')),
+                      DropdownMenuItem(value: 'newest', child: Text('Newest')),
                     ],
                     onChanged: (value) {
                       if (value == null) return;
@@ -242,11 +304,32 @@ class _SearchScreenState extends State<SearchScreen> {
                       if (_controller.text.trim().isNotEmpty) _search();
                     },
                   ),
-                  const Spacer(),
-                  Text(
-                    '${_results.length} results',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  const Text('Language'),
+                  DropdownButton<String>(
+                    value: _language,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'fr', child: Text('French')),
+                      DropdownMenuItem(value: 'es', child: Text('Spanish')),
+                      DropdownMenuItem(value: 'de', child: Text('German')),
+                      DropdownMenuItem(value: '', child: Text('Any')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _language = value);
+                      if (_controller.text.trim().isNotEmpty) _search();
+                    },
                   ),
+                  if (_controller.text.trim().isNotEmpty)
+                    Text(
+                      _error != null
+                          ? 'Unavailable'
+                          : !_searchCompleted
+                              ? 'Searching…'
+                              : '${_results.length} results',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                 ],
               ),
             ),
@@ -261,7 +344,18 @@ class _SearchScreenState extends State<SearchScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_error!, textAlign: TextAlign.center),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => _search(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry search'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -314,10 +408,24 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         Expanded(
           child: ListView.separated(
+            controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: _results.length,
+            itemCount: _results.length + (_hasMore ? 1 : 0),
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
+              if (index >= _results.length) {
+                return Center(
+                  child: _loadingMore
+                      ? const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
+                        )
+                      : TextButton(
+                          onPressed: _loadNextPage,
+                          child: const Text('Load more books'),
+                        ),
+                );
+              }
               final entry = _results[index];
               return Card(
                 clipBehavior: Clip.antiAlias,

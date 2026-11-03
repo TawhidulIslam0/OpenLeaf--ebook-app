@@ -19,7 +19,7 @@ class MyApp extends ConsumerWidget {
         currentAppTheme.value == CurrentAppTheme.dark ? darkTheme : lightTheme,
       ),
       darkTheme: themeData(darkTheme),
-      themeMode: currentAppTheme.value?.themeMode,
+      themeMode: currentAppTheme.value?.themeMode ?? ThemeMode.light,
       routerConfig: _appRouter.config(
         navigatorObservers: () => [
           LogmanNavigatorObserver(),
@@ -35,7 +35,8 @@ class MyApp extends ConsumerWidget {
         theme.textTheme,
       ),
       colorScheme: theme.colorScheme.copyWith(
-        secondary: theme.brightness == Brightness.dark ? darkAccent : lightAccent,
+        secondary:
+            theme.brightness == Brightness.dark ? darkAccent : lightAccent,
       ),
     );
   }

@@ -1,25 +1,17 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'package:flutter/material.dart';
+import 'package:flutter_ebook_app/src/features/search/presentation/ui/screens/search_screen.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-// void main() {
-//   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-//     // Build our app and trigger a frame.
-//     await tester.pumpWidget(MyApp());
-//
-//     // Verify that our counter starts at 0.
-//     expect(find.text('0'), findsOneWidget);
-//     expect(find.text('1'), findsNothing);
-//
-//     // Tap the '+' icon and trigger a frame.
-//     await tester.tap(find.byIcon(Icons.add));
-//     await tester.pump();
-//
-//     // Verify that our counter has incremented.
-//     expect(find.text('0'), findsNothing);
-//     expect(find.text('1'), findsOneWidget);
-//   });
-// }
+void main() {
+  testWidgets('shows an empty catalog search without sample data',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: SearchScreen()),
+    );
+
+    expect(find.text('Find your next read'), findsOneWidget);
+    expect(find.text('Search the library'), findsOneWidget);
+    expect(find.text('Explore science fiction'), findsOneWidget);
+    expect(find.text('0 results'), findsNothing);
+  });
+}

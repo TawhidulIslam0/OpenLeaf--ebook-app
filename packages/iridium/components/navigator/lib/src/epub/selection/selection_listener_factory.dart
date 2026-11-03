@@ -8,10 +8,36 @@ abstract class SelectionListenerFactory {
 
 class SimpleSelectionListenerFactory extends SelectionListenerFactory {
   final State state;
+  final ValueChanged<String>? onTextSelected;
 
-  SimpleSelectionListenerFactory(this.state);
+  SimpleSelectionListenerFactory(this.state, {this.onTextSelected});
 
   @override
   SelectionListener create(ReaderContext readerContext, BuildContext context) =>
-      SimpleSelectionListener(state, readerContext, context);
+      _TextSelectionListener(
+        state,
+        readerContext,
+        context,
+        onTextSelected,
+      );
+}
+
+class _TextSelectionListener extends SimpleSelectionListener {
+  final ValueChanged<String>? onTextSelected;
+
+  _TextSelectionListener(
+    super.state,
+    super.readerContext,
+    super.context,
+    this.onTextSelected,
+  );
+
+  @override
+  void displayPopup(Selection selection) {
+    final selectedText = selection.locator.text.highlight?.trim();
+    if (selectedText != null && selectedText.isNotEmpty) {
+      onTextSelected?.call(selectedText);
+    }
+    super.displayPopup(selection);
+  }
 }

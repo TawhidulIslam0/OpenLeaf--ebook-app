@@ -9,11 +9,21 @@ OpenLeaf is a Flutter ebook library for discovering public-domain books, reading
 - Browse featured books, categories, and recently added titles.
 - Read EPUB books using the integrated Iridium reader.
 - Search the catalog as you type, with debounced requests and stale-request cancellation.
+- Filter catalog search by language, sort results, and page through large result sets.
+- Refresh Explore feeds, browse paginated genres, or use Surprise Me for a live catalog pick.
 - Save favorites and cache downloaded EPUBs locally for faster offline reopening.
+- Track cancellable download progress, retry failures, validate EPUB archives, and manage cached-file storage.
 - Import EPUB and PDF files into a persistent local library.
-- Use reader bookmarks, highlights, saved reading position, and persisted font/theme settings.
-- Continue reading from the last saved EPUB location and view books, sessions, and reading-day statistics.
+- Organize books into custom collections and Want to Read, Currently Reading, and Finished shelves; save ratings and reviews.
+- Use reader bookmarks, highlights, saved reading position, persistent typography/themes, brightness, and landscape settings.
+- Read selected text aloud with speech controls.
+- Continue reading from the last saved EPUB/PDF position; set daily goals and track streaks, reading time, and page activity.
 - Light and dark themes with an editorial forest-green visual identity.
+
+See [FEATURES_AUDIT.md](./FEATURES_AUDIT.md) for implemented and remaining
+features. Library data starts empty and remains on device. Downloads can be
+removed independently of library history; imported-file removal deletes the
+private imported copy.
 
 ## Run in VS Code
 

@@ -21,6 +21,7 @@ class EpubScreen extends BookScreen {
   final int? settings;
   final Map<String, dynamic>? theme;
   final ValueChanged<Map<String, dynamic>>? onSettingsChanged;
+  final ValueChanged<String>? onTextSelected;
 
   const EpubScreen(
       {super.key,
@@ -30,7 +31,8 @@ class EpubScreen extends BookScreen {
       this.location,
       this.settings,
       this.theme,
-      this.onSettingsChanged});
+      this.onSettingsChanged,
+      this.onTextSelected});
 
   factory EpubScreen.fromPath(
       {Key? key,
@@ -40,7 +42,8 @@ class EpubScreen extends BookScreen {
       String? location,
       String? settings,
       String? theme,
-      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged,
+      ValueChanged<String>? onTextSelected}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -56,6 +59,7 @@ class EpubScreen extends BookScreen {
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
       onSettingsChanged: onSettingsChanged,
+      onTextSelected: onTextSelected,
     );
   }
 
@@ -67,7 +71,8 @@ class EpubScreen extends BookScreen {
       String? location,
       String? settings,
       String? theme,
-      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged,
+      ValueChanged<String>? onTextSelected}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -83,6 +88,7 @@ class EpubScreen extends BookScreen {
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
       onSettingsChanged: onSettingsChanged,
+      onTextSelected: onTextSelected,
     );
   }
 
@@ -95,7 +101,8 @@ class EpubScreen extends BookScreen {
       String? location,
       String? settings,
       String? theme,
-      ValueChanged<Map<String, dynamic>>? onSettingsChanged}) {
+      ValueChanged<Map<String, dynamic>>? onSettingsChanged,
+      ValueChanged<String>? onTextSelected}) {
     Map<String, dynamic>? decodedTheme;
     try {
       decodedTheme = json.decode(theme!);
@@ -111,6 +118,7 @@ class EpubScreen extends BookScreen {
       settings: int.tryParse(settings ?? '100'),
       theme: decodedTheme,
       onSettingsChanged: onSettingsChanged,
+      onTextSelected: onTextSelected,
     );
   }
 
@@ -179,7 +187,10 @@ class EpubScreenState extends BookScreenState<EpubScreen, EpubController> {
   }
 
   SelectionListenerFactory get selectionListenerFactory =>
-      SimpleSelectionListenerFactory(this);
+      SimpleSelectionListenerFactory(
+        this,
+        onTextSelected: widget.onTextSelected,
+      );
 
   @override
   EpubController createPublicationController(

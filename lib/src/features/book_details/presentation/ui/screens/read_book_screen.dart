@@ -43,6 +43,7 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
   double? _downloadProgress;
   int _receivedBytes = 0;
   int _totalBytes = 0;
+  CancelToken? _cancelToken;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
       _downloadProgress = null;
       _receivedBytes = 0;
       _totalBytes = 0;
+      _cancelToken = CancelToken();
     });
 
     try {
@@ -72,6 +74,7 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
                   dio: _dio,
                   id: widget.id,
                   url: widget.url,
+                  cancelToken: _cancelToken!,
                   onProgress: (received, total) {
                     if (!mounted) return;
                     setState(() {
@@ -106,6 +109,9 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
         ),
       );
     } catch (error, stackTrace) {
+      if (error is DioException && CancelToken.isCancel(error)) {
+        return;
+      }
       debugPrint('Failed to open "${widget.title}" for reading: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
@@ -127,6 +133,11 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
       );
     }
     return file;
+  }
+
+  void _cancelDownload() {
+    _cancelToken?.cancel('Download cancelled by the reader.');
+    if (mounted) Navigator.maybePop(context);
   }
 
   @override
@@ -166,6 +177,11 @@ class _ReadBookScreenState extends State<ReadBookScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
+                    if (isDownloading)
+                      TextButton(
+                        onPressed: _opening ? _cancelDownload : null,
+                        child: const Text('Cancel download'),
+                      ),
                   ],
                 )
               : Column(

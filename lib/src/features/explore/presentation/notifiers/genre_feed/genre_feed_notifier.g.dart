@@ -29,13 +29,11 @@ class _SystemHash {
   }
 }
 
-abstract class _$GenreFeedNotifier extends BuildlessAutoDisposeAsyncNotifier<
-    ({List<Entry> books, bool loadingMore})> {
+abstract class _$GenreFeedNotifier
+    extends BuildlessAutoDisposeAsyncNotifier<GenreFeedData> {
   late final String url;
 
-  Future<({List<Entry> books, bool loadingMore})> build(
-    String url,
-  );
+  Future<GenreFeedData> build(String url);
 }
 
 /// See also [GenreFeedNotifier].
@@ -43,8 +41,7 @@ abstract class _$GenreFeedNotifier extends BuildlessAutoDisposeAsyncNotifier<
 const genreFeedNotifierProvider = GenreFeedNotifierFamily();
 
 /// See also [GenreFeedNotifier].
-class GenreFeedNotifierFamily
-    extends Family<AsyncValue<({List<Entry> books, bool loadingMore})>> {
+class GenreFeedNotifierFamily extends Family<AsyncValue<GenreFeedData>> {
   /// See also [GenreFeedNotifier].
   const GenreFeedNotifierFamily();
 
@@ -83,7 +80,7 @@ class GenreFeedNotifierFamily
 
 /// See also [GenreFeedNotifier].
 class GenreFeedNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    GenreFeedNotifier, ({List<Entry> books, bool loadingMore})> {
+    GenreFeedNotifier, GenreFeedData> {
   /// See also [GenreFeedNotifier].
   GenreFeedNotifierProvider(
     this.url,
@@ -116,7 +113,7 @@ class GenreFeedNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  Future<({List<Entry> books, bool loadingMore})> runNotifierBuild(
+  Future<GenreFeedData> runNotifierBuild(
     covariant GenreFeedNotifier notifier,
   ) {
     return notifier.build(

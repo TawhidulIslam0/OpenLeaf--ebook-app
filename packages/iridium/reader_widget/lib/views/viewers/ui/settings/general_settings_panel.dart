@@ -34,7 +34,7 @@ class _GeneralSettingsPanelState extends State<GeneralSettingsPanel> {
   @override
   void initState() {
     super.initState();
-    isSelected = [true, false, false];
+    isSelected = List<bool>.filled(ColorTheme.values.length, false);
   }
 
   @override
@@ -45,7 +45,22 @@ class _GeneralSettingsPanelState extends State<GeneralSettingsPanel> {
           children: [
             _buildFontSizeRow(),
             _buildSelectFontRow(),
-            _buildColorThemeRow(),
+            BlocBuilder<ReaderThemeBloc, ReaderThemeState>(
+              bloc: readerThemeBloc,
+              builder: (context, state) {
+                final background = state.readerTheme.backgroundColor;
+                final text = state.readerTheme.textColor;
+                final selectedIndex = ColorTheme.values.indexWhere(
+                  (theme) =>
+                      theme.backgroundColor == background &&
+                      theme.textColor == text,
+                );
+                for (var index = 0; index < isSelected.length; index++) {
+                  isSelected[index] = index == selectedIndex;
+                }
+                return _buildColorThemeRow();
+              },
+            ),
           ],
         ),
       );
