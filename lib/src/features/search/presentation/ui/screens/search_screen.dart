@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ebook_app/src/common/constants/api.dart';
 import 'package:flutter_ebook_app/src/common/domain/models/category_feed.dart';
 import 'package:flutter_ebook_app/src/features/book_details/presentation/ui/screens/book_details_screen.dart';
-import 'package:flutter_ebook_app/src/features/search/data/gutendex_search_query.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,8 +19,8 @@ class _SearchScreenState extends State<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
   final Dio _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 12),
+      receiveTimeout: const Duration(seconds: 12),
     ),
   );
   final Duration _debounceDuration = const Duration(milliseconds: 300);
@@ -85,7 +85,6 @@ class _SearchScreenState extends State<SearchScreen> {
     _debounce?.cancel();
     final query = (value ?? _controller.text).trim();
     if (query.isEmpty) return;
-    final searchQuery = normalizeGutendexSearchQuery(query);
     if (page == 1) {
       _nextPage = 1;
       _hasMore = false;
@@ -106,7 +105,7 @@ class _SearchScreenState extends State<SearchScreen> {
         'https://gutendex.com/books/',
         cancelToken: cancelToken,
         queryParameters: {
-          'search': searchQuery,
+          'search': normalizeGutendexSearchQuery(query),
           'mime_type': 'application/epub+zip',
           if (_language.isNotEmpty) 'languages': _language,
           'copyright': 'false',
@@ -145,9 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
           title: Id(t: '${book['title'] ?? 'Untitled'}'),
           author: Author1(
             name: Id(t: authorName),
-            uri: Id(
-              t: 'https://gutendex.com/books/?search=${Uri.encodeQueryComponent(authorName)}',
-            ),
+            uri: Id(t: gutendexBooksUrl(search: authorName)),
           ),
           summary: Id(
             t: summaries is List && summaries.isNotEmpty
@@ -227,8 +224,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String _errorMessage(DioException error) {
     if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return 'The catalog request timed out. Check your connection and retry.';
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout) {
+      return 'The catalog did not respond within 12 seconds. Check your '
+          'internet connection and retry.';
+    }
+    if (error.type == DioExceptionType.connectionError) {
+      return 'Could not connect to the book catalog. Check your internet '
+          'connection and retry.';
     }
     final statusCode = error.response?.statusCode;
     if (statusCode != null) {

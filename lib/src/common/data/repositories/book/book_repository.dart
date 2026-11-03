@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint, debugPrintStack;
 import 'package:flutter_ebook_app/src/common/common.dart';
 
 typedef BookRepositoryData = ({CategoryFeed? feed, HttpFailure? failure});
@@ -92,10 +93,23 @@ abstract class BookRepository {
         ),
         failure: null,
       );
-    } on DioException catch (error) {
+    } on DioException catch (error, stackTrace) {
       final statusCode = error.response?.statusCode ?? 500;
+      debugPrint('Gutendex request failed for $url: ${error.message}');
+      debugPrintStack(stackTrace: stackTrace);
       if (statusCode == 404) {
         return (feed: null, failure: HttpFailure.notFound);
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return (feed: null, failure: HttpFailure.timeout);
+      }
+      if (error.type == DioExceptionType.connectionError) {
+        return (feed: null, failure: HttpFailure.connection);
+      }
+      if (error.type == DioExceptionType.badResponse) {
+        return (feed: null, failure: HttpFailure.server);
       }
       return (feed: null, failure: HttpFailure.unknown);
     }

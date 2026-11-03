@@ -409,8 +409,9 @@ class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
               },
             );
           },
-          error: (_, __) {
+          error: (error, _) {
             return MyErrorWidget(
+              message: error.toString(),
               refreshCallBack: () => ref
                   .read(bookDetailsNotifierProvider(widget.authorUrl).notifier)
                   .fetch(),

@@ -27,6 +27,7 @@ class ExploreScreenSmall extends ConsumerStatefulWidget {
 
 class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
     with AutomaticKeepAliveClientMixin {
+  static const _maximumConcurrentGenrePrefetches = 4;
   bool _surpriseLoading = false;
   final Set<String> _prefetchedGenres = {};
 
@@ -44,22 +45,44 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
     ref.invalidate(exploreFeedProvider);
   }
 
-  void _prefetchGenres(List<Link> links) {
+  Future<void> _prefetchGenres(List<Link> links) async {
     final repository = ref.read(exploreRepositoryProvider);
-    for (final link in links) {
-      final url = link.href;
-      if (url == null || !_prefetchedGenres.add(url)) continue;
-
-      unawaited(
-        repository.getGenreFeed(url).then<void>(
-          (_) {},
-          onError: (Object error, StackTrace stackTrace) {
-            debugPrint('Could not prefetch Explore genre $url: $error');
-            debugPrintStack(stackTrace: stackTrace);
-          },
-        ),
-      );
+    bool shouldPrioritize(Link link) {
+      final title = link.title?.toLowerCase();
+      return title == 'children' || title == 'history';
     }
+
+    final orderedLinks = [
+      ...links.where(shouldPrioritize),
+      ...links.where((link) => !shouldPrioritize(link)),
+    ];
+    final urls = orderedLinks
+        .map((link) => link.href)
+        .whereType<String>()
+        .where(_prefetchedGenres.add)
+        .toList();
+    var nextUrl = 0;
+
+    Future<void> prefetchWorker() async {
+      while (nextUrl < urls.length) {
+        final url = urls[nextUrl++];
+        try {
+          await repository.getGenreFeed(url);
+        } catch (error, stackTrace) {
+          debugPrint('Could not prefetch Explore genre $url: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      }
+    }
+
+    await Future.wait(
+      List.generate(
+        urls.length < _maximumConcurrentGenrePrefetches
+            ? urls.length
+            : _maximumConcurrentGenrePrefetches,
+        (_) => prefetchWorker(),
+      ),
+    );
   }
 
   Future<void> _refreshExplore() async {
@@ -150,7 +173,7 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
         loading: () => const LoadingWidget(),
         data: (feeds) {
           final links = feeds.feed?.link ?? [];
-          _prefetchGenres(links);
+          unawaited(_prefetchGenres(links));
           return RefreshIndicator(
             onRefresh: _refreshExplore,
             child: ListView.builder(

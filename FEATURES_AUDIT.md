@@ -9,8 +9,8 @@ or collections are seeded.
 | Area | Status | Notes |
 |---|---|---|
 | Gutendex / Project Gutenberg catalog | Implemented | Existing live catalog integration is preserved. |
-| Search | Implemented | Search is debounced, old requests are canceled, Gutenberg's EPUB format is filtered at the API, comma-formatted author names are normalized, results are paginated and capped, and language/sort filters are available. |
-| Explore refresh | Implemented | Pull-to-refresh invalidates the displayed Explore and genre feed caches. Genre requests are prefetched concurrently so lazy list construction does not defer off-screen sections. |
+| Search | Implemented | Search is debounced, old requests are canceled, Gutenberg's EPUB format is filtered at the API, comma-formatted author names are normalized, catalog requests have bounded timeouts, results are paginated and capped, and language/sort filters are available. |
+| Explore refresh | Implemented | Pull-to-refresh invalidates the displayed Explore and genre feed caches. Genre feeds are prefetched with a four-request concurrency cap; Children and History are prioritized to avoid launching the whole catalog as one burst. |
 | Genre pagination | Implemented | Scroll pagination retains existing results on failure and offers a retry action. |
 | Surprise Me | Implemented | Chooses a random result from a live Gutendex page. |
 | Download lifecycle | Implemented | EPUB files use app-private support storage, HTTPS Gutenberg-only redirects, progress, cancellation, retry, cleanup, and ZIP/EPUB structural validation. Cached files reopen offline. |

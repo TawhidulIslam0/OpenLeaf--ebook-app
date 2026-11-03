@@ -1,4 +1,4 @@
-import 'package:flutter_ebook_app/src/features/search/data/gutendex_search_query.dart';
+import 'package:flutter_ebook_app/src/common/constants/api.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -7,6 +7,11 @@ void main() {
       normalizeGutendexSearchQuery('Ostrander, Isabel'),
       'Isabel Ostrander',
     );
+  });
+
+  test('normalizes author names in generated Gutendex URLs', () {
+    final uri = Uri.parse(gutendexBooksUrl(search: 'Ostrander, Isabel'));
+    expect(uri.queryParameters['search'], 'Isabel Ostrander');
   });
 
   test('trims ordinary search queries without changing their words', () {

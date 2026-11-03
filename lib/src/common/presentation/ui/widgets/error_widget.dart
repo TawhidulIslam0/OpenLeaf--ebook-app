@@ -4,11 +4,13 @@ import 'package:flutter_ebook_app/src/common/common.dart';
 class MyErrorWidget extends StatelessWidget {
   final VoidCallback refreshCallBack;
   final bool isConnection;
+  final String? message;
 
   const MyErrorWidget({
     super.key,
     required this.refreshCallBack,
     this.isConnection = false,
+    this.message,
   });
 
   @override
@@ -28,7 +30,7 @@ class MyErrorWidget extends StatelessWidget {
           Container(
             margin: const EdgeInsets.only(bottom: 15.0),
             child: Text(
-              getErrorText(),
+              message ?? getErrorText(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: context.theme.textTheme.titleLarge!.color,
