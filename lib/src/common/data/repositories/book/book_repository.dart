@@ -6,6 +6,22 @@ import 'package:flutter_ebook_app/src/common/common.dart';
 
 typedef BookRepositoryData = ({CategoryFeed? feed, HttpFailure? failure});
 
+bool cachedBookMatchesQuery(Entry entry, String query) {
+  final terms = normalizeGutendexSearchQuery(query)
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((term) => term.isNotEmpty)
+      .toList();
+  if (terms.isEmpty) return false;
+
+  final searchableText = [
+    entry.title?.t,
+    entry.author?.name?.t,
+    ...?entry.category?.map((category) => category.label),
+  ].whereType<String>().join(' ').toLowerCase();
+  return terms.every(searchableText.contains);
+}
+
 class _CachedBookFeed {
   final BookRepositoryData data;
   final DateTime cachedAt;
@@ -25,6 +41,20 @@ abstract class BookRepository {
 
   static void invalidateCache({required String url}) {
     _feedCache.remove(url.replaceAll(baseURL, ''));
+  }
+
+  static List<Entry> findCachedEntries(String query) {
+    final matches = <String, Entry>{};
+    for (final cachedFeed in _feedCache.values) {
+      for (final entry in cachedFeed.data.feed?.feed?.entry ?? <Entry>[]) {
+        if (cachedBookMatchesQuery(entry, query)) {
+          final id = entry.id?.t;
+          if (id != null) matches.putIfAbsent(id, () => entry);
+        }
+      }
+    }
+
+    return matches.values.toList();
   }
 
   Future<BookRepositoryData> getCategory(String url) async {

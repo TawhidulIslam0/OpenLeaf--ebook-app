@@ -379,13 +379,43 @@ class _MoreBooksFromAuthor extends ConsumerStatefulWidget {
 class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
   @override
   Widget build(BuildContext context) {
+    final authorName = widget.entry.author?.name?.t ?? '';
+    final normalizedAuthor =
+        normalizeGutendexSearchQuery(authorName).toLowerCase();
+    final cachedEntries = BookRepository.findCachedEntries(authorName)
+        .where(
+          (entry) =>
+              normalizeGutendexSearchQuery(entry.author?.name?.t ?? '')
+                  .toLowerCase() ==
+              normalizedAuthor,
+        )
+        .where((entry) => entry.id?.t != widget.entry.id?.t)
+        .toList();
+
     return ref.watch(bookDetailsNotifierProvider(widget.authorUrl)).maybeWhen(
           orElse: () => const SizedBox.shrink(),
-          loading: () => const LoadingWidget(),
+          loading: () => cachedEntries.isEmpty
+              ? const LoadingWidget()
+              : Column(
+                  children: [
+                    const LinearProgressIndicator(),
+                    _buildBooks(cachedEntries),
+                  ],
+                ),
           data: (related) {
-            final entries = (related.feed?.entry ?? [])
-                .where((entry) => entry.id?.t != widget.entry.id?.t)
-                .toList();
+            final entriesById = <String, Entry>{};
+            for (final Entry entry in cachedEntries) {
+              final id = entry.id?.t;
+              if (id != null) entriesById[id] = entry;
+            }
+            final List<Entry> remoteEntries = related.feed?.entry ?? [];
+            for (final entry in remoteEntries) {
+              final id = entry.id?.t;
+              if (id != null && id != widget.entry.id?.t) {
+                entriesById[id] = entry;
+              }
+            }
+            final entries = entriesById.values.toList();
             if (entries.isEmpty) {
               return const Center(
                 child: Padding(
@@ -396,20 +426,20 @@ class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
                 ),
               );
             }
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: entries.length,
-              itemBuilder: (BuildContext context, int index) {
-                final entry = entries[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: BookListItem(entry: entry),
-                );
-              },
-            );
+            return _buildBooks(entries);
           },
           error: (error, _) {
+            if (cachedEntries.isNotEmpty) {
+              return Column(
+                children: [
+                  Text(
+                    'Could not refresh recommendations. Showing saved books.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  _buildBooks(cachedEntries),
+                ],
+              );
+            }
             return MyErrorWidget(
               message: error.toString(),
               refreshCallBack: () => ref
@@ -418,5 +448,19 @@ class _MoreBooksFromAuthorState extends ConsumerState<_MoreBooksFromAuthor> {
             );
           },
         );
+  }
+
+  Widget _buildBooks(List<Entry> entries) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: entries.length,
+      itemBuilder: (BuildContext context, int index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5.0),
+          child: BookListItem(entry: entries[index]),
+        );
+      },
+    );
   }
 }

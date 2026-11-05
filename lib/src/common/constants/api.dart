@@ -21,8 +21,7 @@ String gutendexBooksUrl({
   final query = <String, String>{
     'languages': 'en',
     'copyright': 'false',
-    'mime_type': 'application/epub+zip',
-    if (sort != null) 'sort': sort,
+    if (sort != null && sort != 'popular') 'sort': sort,
     if (topic != null) 'topic': topic,
     if (search != null) 'search': normalizeGutendexSearchQuery(search),
     if (page != null) 'page': '$page',

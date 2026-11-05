@@ -9,9 +9,9 @@ class AppDio with DioMixin implements Dio {
     options = BaseOptions(
       baseUrl: baseUrl,
       contentType: 'application/json',
-      connectTimeout: const Duration(seconds: 12),
-      sendTimeout: const Duration(seconds: 12),
-      receiveTimeout: const Duration(seconds: 12),
+      connectTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
     );
     interceptors
       ..add(

@@ -1,7 +1,7 @@
 enum HttpFailure {
   notFound('404 not found'),
   timeout(
-    'The catalog did not respond within 12 seconds. '
+    'The catalog did not respond within 30 seconds. '
     'Check your internet connection and retry.',
   ),
   connection(

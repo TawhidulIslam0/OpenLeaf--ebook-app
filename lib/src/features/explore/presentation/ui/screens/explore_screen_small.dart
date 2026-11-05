@@ -27,7 +27,6 @@ class ExploreScreenSmall extends ConsumerStatefulWidget {
 
 class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
     with AutomaticKeepAliveClientMixin {
-  static const _maximumConcurrentGenrePrefetches = 4;
   bool _surpriseLoading = false;
   final Set<String> _prefetchedGenres = {};
 
@@ -47,41 +46,21 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
 
   Future<void> _prefetchGenres(List<Link> links) async {
     final repository = ref.read(exploreRepositoryProvider);
-    bool shouldPrioritize(Link link) {
-      final title = link.title?.toLowerCase();
-      return title == 'children' || title == 'history';
-    }
-
-    final orderedLinks = [
-      ...links.where(shouldPrioritize),
-      ...links.where((link) => !shouldPrioritize(link)),
-    ];
-    final urls = orderedLinks
+    final urls = links
         .map((link) => link.href)
         .whereType<String>()
         .where(_prefetchedGenres.add)
         .toList();
-    var nextUrl = 0;
 
-    Future<void> prefetchWorker() async {
-      while (nextUrl < urls.length) {
-        final url = urls[nextUrl++];
+    await Future.wait(
+      urls.map((url) async {
         try {
           await repository.getGenreFeed(url);
         } catch (error, stackTrace) {
           debugPrint('Could not prefetch Explore genre $url: $error');
           debugPrintStack(stackTrace: stackTrace);
         }
-      }
-    }
-
-    await Future.wait(
-      List.generate(
-        urls.length < _maximumConcurrentGenrePrefetches
-            ? urls.length
-            : _maximumConcurrentGenrePrefetches,
-        (_) => prefetchWorker(),
-      ),
+      }),
     );
   }
 
@@ -194,8 +173,9 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
             ),
           );
         },
-        error: (_, __) {
+        error: (error, _) {
           return MyErrorWidget(
+            message: error.toString(),
             refreshCallBack: () => loadData(),
           );
         },
@@ -324,8 +304,9 @@ class _SectionBookListState extends ConsumerState<_SectionBookList>
                       },
                     );
                   },
-                  error: (_, __) {
+                  error: (error, _) {
                     return MyErrorWidget(
+                      message: error.toString(),
                       refreshCallBack: () {
                         _fetch();
                       },

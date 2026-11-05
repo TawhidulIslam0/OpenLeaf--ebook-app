@@ -20,6 +20,15 @@ class BookListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final title = entry.title?.t?.replaceAll(r'\', '') ?? 'Untitled';
+    final author = entry.author?.name?.t ?? 'Unknown author';
+    final summary = (entry.summary?.t ?? '')
+        .replaceAll(r'\n', '\n')
+        .replaceAll(r'\r', '')
+        .replaceAll(r'\"', '"');
+    final shortSummary =
+        summary.length > 100 ? '${summary.substring(0, 100)}…' : summary;
+
     return InkWell(
       onTap: () {
         final bool isHomeTab = ref.read(currentTabNotifierProvider).isHomeTab;
@@ -63,6 +72,7 @@ class BookListItem extends ConsumerWidget {
             Flexible(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Hero(
@@ -70,7 +80,7 @@ class BookListItem extends ConsumerWidget {
                     child: Material(
                       type: MaterialType.transparency,
                       child: Text(
-                        entry.title!.t!.replaceAll(r'\', ''),
+                        title,
                         style: TextStyle(
                           fontSize: 17.0,
                           fontWeight: FontWeight.bold,
@@ -87,25 +97,26 @@ class BookListItem extends ConsumerWidget {
                     child: Material(
                       type: MaterialType.transparency,
                       child: Text(
-                        entry.author!.name!.t!,
+                        author,
                         style: TextStyle(
                           fontSize: 14.0,
                           fontWeight: FontWeight.w800,
                           color: context.theme.colorScheme.secondary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                   const SizedBox(height: 10.0),
                   Text(
-                    '${entry.summary!.t!.length < 100 ? entry.summary!.t! : entry.summary!.t!.substring(0, 100)}...'
-                        .replaceAll(r'\n', '\n')
-                        .replaceAll(r'\r', '')
-                        .replaceAll(r'\"', '"'),
+                    shortSummary,
                     style: TextStyle(
                       fontSize: 13.0,
                       color: context.theme.textTheme.bodySmall!.color,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
