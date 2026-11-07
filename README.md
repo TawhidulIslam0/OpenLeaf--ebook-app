@@ -1,6 +1,6 @@
-# OpenLeaf
+# OpenBook
 
-OpenLeaf is a Flutter ebook library for discovering public-domain books, reading EPUBs, saving favorites and downloads, and keeping a personal reading shelf.
+OpenBook is a Flutter ebook library for discovering public-domain books, reading EPUBs, saving favorites and downloads, and keeping a personal reading shelf.
 
 ## Features
 
