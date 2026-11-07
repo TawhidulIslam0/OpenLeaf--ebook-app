@@ -1,4 +1,4 @@
-# OpenLeaf Feature Audit
+# OpenBook Feature Audit
 
 This report distinguishes existing functionality, changes made in this task,
 and gaps that remain. The library stays empty on first launch; no example books

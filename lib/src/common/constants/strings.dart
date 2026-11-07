@@ -1,1 +1,1 @@
-const String appName = 'OpenLeaf';
+const String appName = 'OpenBook';

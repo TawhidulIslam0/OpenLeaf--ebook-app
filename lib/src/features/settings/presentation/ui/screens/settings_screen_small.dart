@@ -120,7 +120,7 @@ class _SettingsScreenSmallState extends State<SettingsScreenSmall> {
         return AlertDialog(
           title: const Text('About'),
           content: const Text(
-            'OpenLeaf is your personal digital reading space, with public-domain books from Project Gutenberg and a local reading shelf.',
+            'OpenBook is your personal digital reading space, with public-domain books from Project Gutenberg and a local reading shelf.',
           ),
           actions: <Widget>[
             TextButton(

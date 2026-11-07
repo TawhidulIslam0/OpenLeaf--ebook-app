@@ -15,49 +15,63 @@ class MyErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      margin: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Text(
-            '😔',
-            style: TextStyle(
-              fontSize: 60.0,
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(bottom: 15.0),
-            child: Text(
-              message ?? getErrorText(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: context.theme.textTheme.titleLarge!.color,
-                fontSize: 17.0,
-                fontWeight: FontWeight.w700,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxHeight.isFinite && constraints.maxHeight < 280;
+        return Container(
+          alignment: Alignment.center,
+          margin: EdgeInsets.symmetric(horizontal: compact ? 12.0 : 20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                '😔',
+                style: TextStyle(fontSize: compact ? 40.0 : 60.0),
               ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => refreshCallBack(),
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5.0),
+              Padding(
+                padding: EdgeInsets.only(bottom: compact ? 6.0 : 15.0),
+                child: Text(
+                  message ?? getErrorText(),
+                  textAlign: TextAlign.center,
+                  maxLines: compact ? 3 : null,
+                  overflow: compact ? TextOverflow.ellipsis : null,
+                  style: TextStyle(
+                    color: context.theme.textTheme.titleLarge!.color,
+                    fontSize: compact ? 14.0 : 17.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              backgroundColor: context.theme.colorScheme.secondary,
-            ),
-            child: const Text(
-              'TRY AGAIN',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15.0,
-                fontWeight: FontWeight.bold,
+              ElevatedButton(
+                onPressed: refreshCallBack,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(0, compact ? 34.0 : 48.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 12.0 : 16.0,
+                    vertical: compact ? 4.0 : 8.0,
+                  ),
+                  tapTargetSize: compact
+                      ? MaterialTapTargetSize.shrinkWrap
+                      : MaterialTapTargetSize.padded,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5.0),
+                  ),
+                  backgroundColor: context.theme.colorScheme.secondary,
+                ),
+                child: Text(
+                  'TRY AGAIN',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 12.0 : 15.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

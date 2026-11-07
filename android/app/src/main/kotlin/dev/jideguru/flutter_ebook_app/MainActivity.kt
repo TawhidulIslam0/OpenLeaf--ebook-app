@@ -46,7 +46,7 @@ class MainActivity: FlutterActivity() {
                     connection = imageConnection
                     imageConnection.connectTimeout = 15000
                     imageConnection.readTimeout = 15000
-                    imageConnection.setRequestProperty("User-Agent", "OpenLeaf eBook Reader")
+                    imageConnection.setRequestProperty("User-Agent", "OpenBook eBook Reader")
                     imageConnection.connect()
                     val statusCode = imageConnection.responseCode
                     if (statusCode !in 200..299) {
@@ -153,7 +153,7 @@ class MainActivity: FlutterActivity() {
                 request.instanceFollowRedirects = false
                 request.connectTimeout = 20000
                 request.readTimeout = 30000
-                request.setRequestProperty("User-Agent", "OpenLeaf eBook Reader")
+                request.setRequestProperty("User-Agent", "OpenBook eBook Reader")
                 val status = request.responseCode
                 if (status in 300..399) {
                     val location = request.getHeaderField("Location")

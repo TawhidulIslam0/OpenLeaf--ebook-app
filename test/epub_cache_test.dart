@@ -11,7 +11,7 @@ void main() {
   const cache = EpubCache();
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('openleaf-epub-test-');
+    directory = await Directory.systemTemp.createTemp('openbook-epub-test-');
   });
 
   tearDown(() async {

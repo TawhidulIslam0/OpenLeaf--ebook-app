@@ -143,7 +143,7 @@ class BookCover extends StatelessWidget {
       url,
       options: Options(
         responseType: ResponseType.bytes,
-        headers: const {'User-Agent': 'OpenLeaf eBook Reader'},
+        headers: const {'User-Agent': 'OpenBook eBook Reader'},
       ),
     );
     final bytes = response.data;

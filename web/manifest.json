@@ -1,6 +1,6 @@
 {
-  "name": "OpenLeaf",
-  "short_name": "OpenLeaf",
+  "name": "OpenBook",
+  "short_name": "OpenBook",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#FAF9F5",

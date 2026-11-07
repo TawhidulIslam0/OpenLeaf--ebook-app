@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
@@ -28,11 +27,9 @@ class ExploreScreenSmall extends ConsumerStatefulWidget {
 class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
     with AutomaticKeepAliveClientMixin {
   bool _surpriseLoading = false;
-  final Set<String> _prefetchedGenres = {};
 
   void loadData() {
     BookRepository.invalidateCache(url: popular);
-    _prefetchedGenres.clear();
     final previousFeed = ref.read(exploreFeedProvider).asData?.value;
     for (final link in previousFeed?.feed?.link ?? <Link>[]) {
       final url = link.href;
@@ -44,24 +41,13 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
     ref.invalidate(exploreFeedProvider);
   }
 
-  Future<void> _prefetchGenres(List<Link> links) async {
-    final repository = ref.read(exploreRepositoryProvider);
-    final urls = links
-        .map((link) => link.href)
-        .whereType<String>()
-        .where(_prefetchedGenres.add)
-        .toList();
+  void _startAllGenreFeeds(List<Link> links) {
+    for (final link in links) {
+      final url = link.href;
+      if (url == null || url.isEmpty) continue;
 
-    await Future.wait(
-      urls.map((url) async {
-        try {
-          await repository.getGenreFeed(url);
-        } catch (error, stackTrace) {
-          debugPrint('Could not prefetch Explore genre $url: $error');
-          debugPrintStack(stackTrace: stackTrace);
-        }
-      }),
-    );
+      ref.listen(genreFeedNotifierProvider(url), (previous, next) {});
+    }
   }
 
   Future<void> _refreshExplore() async {
@@ -152,7 +138,7 @@ class _ExploreScreenSmallState extends ConsumerState<ExploreScreenSmall>
         loading: () => const LoadingWidget(),
         data: (feeds) {
           final links = feeds.feed?.link ?? [];
-          unawaited(_prefetchGenres(links));
+          _startAllGenreFeeds(links);
           return RefreshIndicator(
             onRefresh: _refreshExplore,
             child: ListView.builder(

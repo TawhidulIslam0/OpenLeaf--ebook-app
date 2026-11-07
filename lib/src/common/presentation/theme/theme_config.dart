@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 const Color lightPrimary = Color(0xffF5F5F5);
 const Color darkPrimary = Color(0xff1f1f1f);
-const Color lightAccent = Color(0xff356B52); // OpenLeaf forest green
+const Color lightAccent = Color(0xff356B52); // OpenBook forest green
 const Color darkAccent = Color(0xff8FBE9F);
 const Color lightBG = Colors.white;
 const Color darkBG = Color(0xff121212);
